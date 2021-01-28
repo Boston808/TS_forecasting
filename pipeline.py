@@ -21,3 +21,4 @@ pipeline = Pipeline(
 )
 
 estimator = pp.Estimator(model=model, train_size=0.8, lambda_boxcox=cfg.lambda_boxcox, shift=cfg.shift)
+

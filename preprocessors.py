@@ -159,3 +159,4 @@ class Estimator():
         scores['test_rmse'] = rmse(self.y_test, self.y_test_pred.fillna(0))
         
         return scores
+
