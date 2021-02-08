@@ -16,6 +16,8 @@ df = get_data()
 
 app = dash.Dash(__name__)
 
+server = app.server
+
 app.layout = html.Div(children=[
     html.Div([
     dcc.Dropdown(
