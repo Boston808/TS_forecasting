@@ -6,13 +6,11 @@ import plotly.express as px
 import pandas as pd
 import json
 import requests
-import socket
 from load_data import get_data, get_forecast
 
-host_name = socket.gethostname() 
-host_ip = socket.gethostbyname(host_name)
-# host_ip = '18.156.118.16'
-url = 'http://{}:5000/train_predict'.format(host_ip)
+ip = requests.get('https://checkip.amazonaws.com').text.strip()
+# ip = '18.156.118.16'
+url = 'http://{}:5000/train_predict'.format(ip)
 
 df = get_data()
 

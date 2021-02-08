@@ -7,7 +7,7 @@ import pandas as pd
 import joblib
 from preprocessors import convert_from_log
 from sequence_pipeline import LogTransformer, FeatureExtractor, FeatureSelector
-import socket
+import requests
 
 def forecast_window(ts):
     status = 'SUCCESS'
@@ -47,9 +47,8 @@ def forecast_sequence(ts, steps, model, pipeline):
 app = Flask(__name__)
 @app.route('/', methods=['GET'])
 def hello():
-    host_name = socket.gethostname() 
-    host_ip = socket.gethostbyname(host_name)
-    return("Server is running on {}!".format(host_ip))
+    ip = requests.get('https://checkip.amazonaws.com').text.strip()
+    return("Server is running on {}!".format(ip))
 
 
 @app.route("/train_predict", methods=["POST"])
