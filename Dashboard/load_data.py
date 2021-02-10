@@ -20,6 +20,14 @@ def get_forecast(url, data):
     data = data.to_json()
     response = requests.post(url, data=data)
     r = response.json()
+    mae = r['scores']['test_mae']
+    weekday_mae = r['weekday_scores']
+    weekday_mae = {int(k):v for k,v in weekday_mae.items()}
     f = pd.read_json(r['forecast'], typ='series', orient='records').to_frame()
     f.columns = ['forecast']
-    return f
+    f['lower'] = f['forecast'] - mae
+    f['upper'] = f['forecast'] + mae
+    f['dayofweek'] = f.index.dayofweek
+    f['w_lower'] = f.apply(lambda x: x['forecast'] - weekday_mae[x['dayofweek']], axis=1)
+    f['w_upper'] = f.apply(lambda x: x['forecast'] + weekday_mae[x['dayofweek']], axis=1)
+    return f.clip(0)

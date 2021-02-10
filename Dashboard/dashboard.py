@@ -57,6 +57,26 @@ def display_forecast(ticker):
     fig = px.line(data[-30:])
     forecast = get_forecast(url, data)
     fig.add_scatter(x= forecast.index ,y = forecast['forecast'], mode='lines', name='Forecast')
+    fig.add_scatter(
+        name='Upper Bound',
+        x=forecast.index,
+        y=forecast['w_upper'],
+        mode='lines',
+        marker=dict(color="#444"),
+        line=dict(width=1),
+        showlegend=False
+    )
+    fig.add_scatter(
+        name='Lower Bound',
+        x=forecast.index,
+        y=forecast['w_lower'],
+        marker=dict(color="#444"),
+        line=dict(width=1),
+        mode='lines',
+        fillcolor='rgba(68, 68, 68, 0.3)',
+        fill='tonexty',
+        showlegend=False
+    )
     return fig
 
 if __name__ == '__main__':

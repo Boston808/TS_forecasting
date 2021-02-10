@@ -8,19 +8,23 @@ import joblib
 from preprocessors import convert_from_log
 from sequence_pipeline import LogTransformer, FeatureExtractor, FeatureSelector
 import requests
+from statsmodels.tsa.api import ExponentialSmoothing
+import config as cfg
 
 def forecast_window(ts):
     status = 'SUCCESS'
     ts = ts.to_frame()
     X = p.pipeline.fit_transform(ts)
     p.estimator.fit(X)
-    forecast = p.estimator.forecast()
+    forecast = p.estimator.forecast().fillna(0)
     scores = p.estimator.evaluate()
+    weekday_scores = p.estimator.eval_dayofweek()
 
     output = {}
     output['status'] = status
     output['forecast'] = forecast.to_json()
     output['scores'] = scores
+    output['weekday_scores'] = weekday_scores
 
     return output
 
@@ -43,6 +47,16 @@ def forecast_sequence(ts, steps, model, pipeline):
     
     return ts[initial_len:]
 
+def forecast_hw(ts):
+    status = 'SUCCESS'
+    es = ExponentialSmoothing(ts, trend='add', seasonal='add', freq='D').fit()
+    es_y = es.forecast(steps=cfg.shift)
+    
+    output = {}
+    output['status'] = status
+    output['forecast'] = es_y.to_json()
+
+    return output
 
 app = Flask(__name__)
 @app.route('/', methods=['GET'])
@@ -94,6 +108,25 @@ def get_forecast():
         return 'An error occured during pipeline process: {}'.format(e)
     response = {}
     response['forecast'] = forecast['Sales'].to_json()   
+    return jsonify(response)
+
+@app.route("/holt_winters", methods=["POST"])
+def hp_forecast():
+    try:
+        requestData = request.data
+    except Exception as e:
+        return 'An error occured during request data: {}'.format(e)
+        
+    try:
+        ts = pd.read_json(requestData, typ='series', orient='records')
+    except Exception as e:
+        return 'An error occured during data transformation into series: {}'.format(e)
+
+    try:
+        response = forecast_hw(ts)
+    except Exception as e:
+        return 'An error occured during fit process: {}'.format(e)
+    
     return jsonify(response)
 
 if __name__ =='__main__':

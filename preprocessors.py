@@ -13,6 +13,12 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error as mae
 
 convert_from_log=lambda x: inv_boxcox1p(x, cfg.lambda_boxcox)
 
+def weekday_breakdown(item):
+    output = {}
+    for i in list(range(7)):
+        output[i] = list(item[item['dayofweek']==i].iloc[:,:1].values.ravel())
+    return output
+    
 def mape(y_true, y_pred): 
     y_true = np.array(y_true, dtype=np.float)
     y_pred = np.array(y_pred, dtype=np.float)
@@ -160,3 +166,18 @@ class Estimator():
         
         return scores
 
+    def eval_dayofweek(self):
+        true = self.y_test.to_frame().copy()
+        pred = self.y_test_pred.fillna(0).to_frame().copy()
+        
+        for item in (true, pred):
+            item['dayofweek'] = item.index.dayofweek
+            
+        true_b = weekday_breakdown(true)
+        pred_b = weekday_breakdown(pred)
+        
+        weekday_mae = {}
+        for k in true_b:
+            weekday_mae[k] = mae(true_b[k], pred_b[k])
+        
+        return weekday_mae
