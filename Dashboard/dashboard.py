@@ -9,8 +9,8 @@ import requests
 from load_data import get_data, get_forecast
 
 ip = requests.get('https://checkip.amazonaws.com').text.strip()
-
-url = 'http://{}:5000/train_predict'.format(ip)
+# ip = '127.0.0.1'
+url = 'http://{}:5000/'.format(ip)
 
 df = get_data()
 
@@ -40,18 +40,22 @@ app.layout = html.Div(children=[
     ]),
 
     html.Div([
-        html.Div(children='''
-            Last 30 days of sales with forecast.
-        '''),
         html.Br(),
-    dcc.RadioItems(
-                id='err_type',
-                options=[{'label': i, 'value': i} for i in ['Day of week MAE', 'Simple MAE']],
-                value='Day of week MAE',
-                labelStyle={'display': 'inline-block'}
-        ),
-    dcc.Graph(id="forecast-chart"),
-    ]),
+        dcc.Dropdown(
+            id="model",
+            options=[{"label": "XGBoost", "value": "train_predict"},
+                     {'label': "Exponential Smoothing", 'value': "holt_winters"}],
+            value= "train_predict",
+            clearable=False,
+            ),
+        dcc.RadioItems(
+            id='err_type',
+            options=[{'label': i, 'value': i} for i in ['Day of week MAE', 'Simple MAE']],
+            value='Day of week MAE',
+            labelStyle={'display': 'inline-block'}
+            ),
+        dcc.Graph(id="forecast-chart"),
+        ]),
 ])
 
 
@@ -73,11 +77,12 @@ def display_time_series(ticker, agg_type):
 @app.callback(
     Output("forecast-chart", "figure"), 
     [Input("ticker", "value"),
+    Input("model", "value"),
     Input("err_type", "value")])
-def display_forecast(ticker, err_type):
+def display_forecast(ticker, model, err_type):
     data = df[df['Store']==ticker]['Sales'].sort_index()
     fig = px.line(data[-30:])
-    forecast = get_forecast(url, data)
+    forecast = get_forecast(url, data, model)
     
     if err_type == 'Day of week MAE':
         upper = 'w_upper'

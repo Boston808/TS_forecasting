@@ -16,8 +16,9 @@ def get_data():
     multi_ts = light_df[light_df['Store'].isin(top_stores)]
     return multi_ts
 
-def get_forecast(url, data):
+def get_forecast(url, data, model):
     data = data.to_json()
+    url = url + model
     response = requests.post(url, data=data)
     r = response.json()
     mae = r['scores']['test_mae']

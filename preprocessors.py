@@ -6,6 +6,8 @@ import math
 from scipy.special import boxcox1p
 from scipy.special import inv_boxcox1p
 
+from statsmodels.tsa.api import ExponentialSmoothing
+
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.feature_selection import RFE
 
@@ -181,3 +183,48 @@ class Estimator():
             weekday_mae[k] = mae(true_b[k], pred_b[k])
         
         return weekday_mae
+
+
+def ts_weekday_eval(X, periods, train_size):
+    train_len = round(len(X) * train_size)
+    test_len = len(X) - train_len
+    split = train_len
+    y_pred_agg = pd.Series()
+    
+    while test_len > periods:
+        model = ExponentialSmoothing(X[:split], trend='add', seasonal='add', freq='D').fit()
+        y_pred = model.forecast(steps=periods)
+        y_pred_agg = y_pred_agg.append(y_pred)
+        split += periods
+        test_len -=periods
+        
+    true = X[train_len:train_len+len(y_pred_agg)].to_frame().copy()
+    pred = y_pred_agg.to_frame().copy()
+    
+    for item in (true, pred):
+            item['dayofweek'] = item.index.dayofweek
+    
+    true_b = weekday_breakdown(true)
+    pred_b = weekday_breakdown(pred)
+        
+    weekday_mae = {}
+    for k in true_b:
+        weekday_mae[k] = mae(true_b[k], pred_b[k])
+    
+    return weekday_mae
+
+
+def ts_cv(X, periods, train_size):
+    train_len = round(len(X) * train_size)
+    test_len = len(X) - train_len
+    split = train_len
+    mean_errors = []
+    root_errors = []
+    while test_len > periods:
+        model = ExponentialSmoothing(X[:split], trend='add', seasonal='add', freq='D').fit()
+        y_pred = model.forecast(steps=periods)
+        mean_errors.append(mae(X[split:split+periods], y_pred))
+        root_errors.append(rmse(X[split:split+periods], y_pred))
+        split += periods
+        test_len -=periods
+    return {'test_mae':np.mean(mean_errors), 'test_rmse':np.mean(root_errors)}

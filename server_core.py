@@ -5,7 +5,7 @@ from flask import jsonify
 import json
 import pandas as pd
 import joblib
-from preprocessors import convert_from_log
+from preprocessors import convert_from_log, ts_cv, ts_weekday_eval
 from sequence_pipeline import LogTransformer, FeatureExtractor, FeatureSelector
 import requests
 from statsmodels.tsa.api import ExponentialSmoothing
@@ -51,10 +51,14 @@ def forecast_hw(ts):
     status = 'SUCCESS'
     es = ExponentialSmoothing(ts, trend='add', seasonal='add', freq='D').fit()
     es_y = es.forecast(steps=cfg.shift)
-    
+    scores = ts_cv(ts, cfg.shift, cfg.train_size)
+    weekday_scores = ts_weekday_eval(ts, cfg.shift, cfg.train_size)
+
     output = {}
     output['status'] = status
     output['forecast'] = es_y.to_json()
+    output['scores'] = scores
+    output['weekday_scores'] = weekday_scores
 
     return output
 
